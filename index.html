@@ -22,7 +22,7 @@
                     playScores(1, 170, melody, "square");
                     playScores(2, 170, harmony, "square");
                     playScores(3, 170, bass, "triangle");
-                    playNoises(170, drum);
+                    playNoises(4, 170, drum);
 
                     setTimeout(() => {
                         document.getElementById("play").disabled = false;
@@ -31,7 +31,7 @@
                 });
 
                 window.AudioContext = window.webkitAudioContext || window.AudioContext;
-                let audioCtxs = [new AudioContext(), new AudioContext(), new AudioContext()];
+                let audioCtxs = [new AudioContext(), new AudioContext(), new AudioContext(), new AudioContext()];
                 let times = [0, 0, 0];
 
                 function _createSound(track, bpm, f, gain, type, beatLength, stopLength) {
@@ -60,9 +60,10 @@
                     }
                 }
 
-                function playNoises(bpm, score) {
+                function playNoises(track, bpm, score) {
                     let time = 0;
-                    let audioCtx = new AudioContext();
+                    let index = track - 1;
+
                     for (let i = 0; i < score.length; i++) {
                         let channels = 2;
                         let frequency = score[i].frequency;
@@ -80,10 +81,10 @@
                         let duration = timePerBeat * score[i].delay;
                         let frameCount = samplingRate * length;
 
-                        let gainNode = audioCtx.createGain();
+                        let gainNode = audioCtxs[index].createGain();
                         gainNode.gain.value = score[i].gain;
 
-                        let myArrayBuffer = audioCtx.createBuffer(2, frameCount, samplingRate);
+                        let myArrayBuffer = audioCtxs[index].createBuffer(2, frameCount, samplingRate);
 
                         for (let channel = 0; channel < channels; channel++) {
                             let nowBuffering = myArrayBuffer.getChannelData(channel);
@@ -96,10 +97,10 @@
                             }
                         }
 
-                        let source = audioCtx.createBufferSource();
+                        let source = audioCtxs[index].createBufferSource();
                         source.buffer = myArrayBuffer;
 
-                        source.connect(gainNode).connect(audioCtx.destination);
+                        source.connect(gainNode).connect(audioCtxs[index].destination);
                         source.start(time);
                         time += length;
                         source.stop(time);
