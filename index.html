@@ -62,7 +62,7 @@
 
                 function playNoises(bpm, score) {
                     let time = 0;
-                    let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    let audioCtx = new AudioContext();
                     for (let i = 0; i < score.length; i++) {
                         let channels = 2;
                         let frequency = score[i].frequency;
