@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ja">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>adventCalender2022</title>
+        <script src="./pitches.js"></script>
+        <script src="./melody.js"></script>
+        <script src="./harmony.js"></script>
+        <script src="./bass.js"></script>
+        <script src="./drum.js"></script>
+    </head>
+    <body>
+        <button id="play">▶︎ 再生</button>
+        <script>
+            window.addEventListener("DOMContentLoaded", () => {
+
+                document.getElementById("play").addEventListener("click", () => {
+                    document.getElementById("play").disabled = true;
+                    document.getElementById("play").innerHTML = "再生中";
+
+                    playScores(1, 170, melody, "square");
+                    playScores(2, 170, harmony, "square");
+                    playScores(3, 170, bass, "triangle");
+                    playNoises(170, drum);
+
+                    setTimeout(() => {
+                        document.getElementById("play").disabled = false;
+                        document.getElementById("play").innerHTML = "▶︎ 再生";
+                    }, 118000);
+                });
+
+                window.AudioContext = window.webkitAudioContext || window.AudioContext;
+                let audioCtxs = [new AudioContext(), new AudioContext(), new AudioContext()];
+                let times = [0, 0, 0];
+
+                function _createSound(track, bpm, f, gain, type, beatLength, stopLength) {
+                    let timePerBeat = 60 / bpm;
+                    let index = track - 1;
+
+                    let gainNode = audioCtxs[index].createGain();
+                    gainNode.gain.value = gain;
+
+                    let osc = audioCtxs[index].createOscillator();
+                    osc.connect(gainNode).connect(audioCtxs[index].destination);
+
+                    osc.type = type;
+                    osc.frequency.value = f;
+                    osc.start(times[index]);
+                    times[index] += beatLength * timePerBeat;
+                    osc.stop(times[index]);
+                    times[index] += stopLength * timePerBeat;
+                }
+
+                function playScores(track, bpm, score, type) {
+                    let index = track - 1;
+                    times[index] = audioCtxs[index].currentTime;
+                    for (let i = 0; i < score.length; i++){
+                        _createSound(track, bpm, score[i].frequency, score[i].gain, type, score[i].length, score[i].delay);
+                    }
+                }
+
+                function playNoises(bpm, score) {
+                    let time = 0;
+                    let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                    for (let i = 0; i < score.length; i++) {
+                        let channels = 2;
+                        let frequency = score[i].frequency;
+                        let timePerBeat = 60 / bpm;
+
+                        if (frequency < 150) {
+                            frequency = 150;
+                        } else if (frequency > 38400) {
+                            frequency = 38400;
+                        }
+
+                        let samplingRate = frequency * 20;
+
+                        let length = timePerBeat * score[i].length;
+                        let duration = timePerBeat * score[i].delay;
+                        let frameCount = samplingRate * length;
+
+                        let gainNode = audioCtx.createGain();
+                        gainNode.gain.value = score[i].gain;
+
+                        let myArrayBuffer = audioCtx.createBuffer(2, frameCount, samplingRate);
+
+                        for (let channel = 0; channel < channels; channel++) {
+                            let nowBuffering = myArrayBuffer.getChannelData(channel);
+                            for (let j = 0; j < frameCount; j++) {
+                                if (Math.random() < 0.5) {
+                                    nowBuffering[j] = -0.2;
+                                } else if (Math.random() <= 1) {
+                                    nowBuffering[j] = 0.2;
+                                }
+                            }
+                        }
+
+                        let source = audioCtx.createBufferSource();
+                        source.buffer = myArrayBuffer;
+
+                        source.connect(gainNode).connect(audioCtx.destination);
+                        source.start(time);
+                        time += length;
+                        source.stop(time);
+                        time += duration;
+                    }
+                }
+            });
+        </script>
+    </body>
+</html>
